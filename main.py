@@ -15,6 +15,7 @@ if len(os.listdir("data/yolo_dets")) == len(os.listdir(DATA_FOLDER)):
     OLD_DATA_FOLDER = DATA_FOLDER
     DATA_FOLDER = "data/yolo_dets"
 
+
 def process_sequence(folder):
     print("Processing folder: " + folder)
 
@@ -32,7 +33,7 @@ def process_sequence(folder):
         use_embeddings=True,
         use_color_histogram=True,
         threshold_iou=0.8,
-        threshold_conf=int(df_det["conf"].describe()["25%"]), # remove worst 25%
+        threshold_conf=int(df_det["conf"].describe()["25%"]),  # remove worst 25%
         image_folder=os.path.join("data/MOT15/train", folder, "img1"),
     )
 
@@ -40,13 +41,15 @@ def process_sequence(folder):
     mot.compute_tracks_association()
 
     # Save the associated tracks in a file
-    mot.df_det.iloc[:, list(range(10))].to_csv("data/outputs/" + folder + ".txt", index=False, header=False, sep=",")
+    mot.df_det.iloc[:, list(range(10))].to_csv(
+        "data/outputs/" + folder + ".txt", index=False, header=False, sep=","
+    )
 
     # Print results' summary
     print("Final number of tracks: " + str(mot.df_det["id"].max()))
 
-def main():
 
+def main():
     processing_times = {}
 
     for folder in os.listdir(DATA_FOLDER):
@@ -67,7 +70,18 @@ def main():
         processing_time = end_time - start_time
 
         # Compute the frames per second (fps)
-        fps = len(os.listdir(os.path.join(OLD_DATA_FOLDER if OLD_DATA_FOLDER is not None else DATA_FOLDER, folder, "img1"))) / processing_time
+        fps = (
+            len(
+                os.listdir(
+                    os.path.join(
+                        OLD_DATA_FOLDER if OLD_DATA_FOLDER is not None else DATA_FOLDER,
+                        folder,
+                        "img1",
+                    )
+                )
+            )
+            / processing_time
+        )
 
         # Store the processing time and fps in the dictionary
         processing_times[folder] = (processing_time, fps)
@@ -76,6 +90,7 @@ def main():
     with open("processing_times.txt", "w") as file:
         for folder, (processing_time, fps) in processing_times.items():
             file.write(f"{folder}: {processing_time} seconds, {fps} fps\n")
+
 
 if __name__ == "__main__":
     main()

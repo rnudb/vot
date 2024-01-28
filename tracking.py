@@ -11,6 +11,7 @@ import torch
 
 image_embedder = ImageEmbedder(None, None)
 
+
 class MultiObjectTracking:
     def __init__(
         self,
@@ -21,9 +22,8 @@ class MultiObjectTracking:
         use_kalman_filters=False,
         use_embeddings=False,
         use_color_histogram=False,
-        image_folder="data/ADL-Rundle-6/img1"
+        image_folder="data/ADL-Rundle-6/img1",
     ) -> None:
-
         self.use_hungarian_matching = use_hungarian_matching
         self.use_kalman_filters = use_kalman_filters
         self.use_embeddings = use_embeddings
@@ -35,23 +35,17 @@ class MultiObjectTracking:
         # Add kalman filters to the dataframe
         df_det["kalman"] = None
         self.df_det = df_det.sort_values(by=["frame"])
-        
+
         # Filter out low confidence detections
         if threshold_conf is not None:
-            self.df_det = self.df_det[
-                self.df_det["conf"] > threshold_conf
-            ]
+            self.df_det = self.df_det[self.df_det["conf"] > threshold_conf]
 
         # Set the confidence to 1, to match the format of the MOT15 dataset
         self.df_det["conf"] = 1
 
         # Clamp the bounding boxes to the image size
-        self.df_det["bb_left"] = self.df_det["bb_left"].clip(
-            lower=0, upper=1920
-        )
-        self.df_det["bb_top"] = self.df_det["bb_top"].clip(
-            lower=0, upper=1080
-        )
+        self.df_det["bb_left"] = self.df_det["bb_left"].clip(lower=0, upper=1920)
+        self.df_det["bb_top"] = self.df_det["bb_top"].clip(lower=0, upper=1080)
 
         # Remove < 5 width or height detections
         self.df_det = self.df_det[
@@ -67,7 +61,7 @@ class MultiObjectTracking:
             "x_dt_meas": 1,  # Measurement noise in x direction
             "y_dt_meas": 1,  # Measurement noise in y direction
         }
-        
+
         self.df_det["embedding"] = None
         self.df_det["color_histograms"] = None
         if self.use_embeddings or self.use_color_histogram:
@@ -81,11 +75,13 @@ class MultiObjectTracking:
 
             if use_embeddings:
                 self.image_embedder.compute_embeddings()
-                self.df_det['embedding'] = self.image_embedder.df_det['embedding']
+                self.df_det["embedding"] = self.image_embedder.df_det["embedding"]
 
             if use_color_histogram:
                 self.image_embedder.compute_color_histograms()
-                self.df_det["color_histograms"] = self.image_embedder.df_det["color_histograms"]
+                self.df_det["color_histograms"] = self.image_embedder.df_det[
+                    "color_histograms"
+                ]
 
     """
         UTILS
@@ -164,7 +160,6 @@ class MultiObjectTracking:
         if self.use_kalman_filters:
             self.update_kalman_filters(1)
 
-
     def compute_similarity_matrix(self, frame):
         # Get the detections of the current frame
         df_det_frame = self.df_det.loc[self.df_det["frame"] == frame]
@@ -205,16 +200,30 @@ class MultiObjectTracking:
                 )
 
                 if self.use_embeddings:
-                    similarity_matrix_embedding[i, j] += self.image_embedder.distance(det['embedding'], det_prev['embedding'])
-                
+                    similarity_matrix_embedding[i, j] += self.image_embedder.distance(
+                        det["embedding"], det_prev["embedding"]
+                    )
+
                 if self.use_color_histogram:
-                    dist = self.image_embedder.distance(det["color_histograms"], det_prev["color_histograms"])
+                    dist = self.image_embedder.distance(
+                        det["color_histograms"], det_prev["color_histograms"]
+                    )
                     similarity_matrix_histogram[i, j] += dist
-        
+
         # Normalize the similarity matrices
-        similarity_matrix_IoU /= similarity_matrix_IoU.max() if similarity_matrix_IoU.max() != 0 else 1
-        similarity_matrix_embedding /= similarity_matrix_embedding.max() if similarity_matrix_embedding.max() != 0 else 1
-        similarity_matrix_histogram /= similarity_matrix_histogram.max() if similarity_matrix_histogram.max() != 0 else 1
+        similarity_matrix_IoU /= (
+            similarity_matrix_IoU.max() if similarity_matrix_IoU.max() != 0 else 1
+        )
+        similarity_matrix_embedding /= (
+            similarity_matrix_embedding.max()
+            if similarity_matrix_embedding.max() != 0
+            else 1
+        )
+        similarity_matrix_histogram /= (
+            similarity_matrix_histogram.max()
+            if similarity_matrix_histogram.max() != 0
+            else 1
+        )
 
         # Compute the final similarity matrix
         similarity_matrix = similarity_matrix_IoU
@@ -225,7 +234,9 @@ class MultiObjectTracking:
 
         # Normalize the similarity matrix (useful for thresholding)
         if not self.use_hungarian_matching:
-            similarity_matrix /= similarity_matrix.max() if similarity_matrix.max() != 0 else 1
+            similarity_matrix /= (
+                similarity_matrix.max() if similarity_matrix.max() != 0 else 1
+            )
 
         return similarity_matrix
 
@@ -340,7 +351,6 @@ class MultiObjectTracking:
 
         print("Computing tracks association...")
 
-
         # Iterate over the frames
         for frame in tqdm(range(2, max_frame + 1)):
             df_det_frame = self.df_det.loc[self.df_det["frame"] == frame]
@@ -354,13 +364,14 @@ class MultiObjectTracking:
 
             # If there are no detections in the previous frame, init the current frame to new tracks
             if len(df_det_frame_prev) == 0:
-
                 current_max_id = self.df_det["id"].max()
                 if current_max_id == -1:
                     current_max_id = 0
 
                 for i in range(len(df_det_frame)):
-                    self.df_det.at[df_det_frame.iloc[i].name, "id"] = current_max_id + i + 1
+                    self.df_det.at[df_det_frame.iloc[i].name, "id"] = (
+                        current_max_id + i + 1
+                    )
 
                 if self.use_kalman_filters:
                     self.update_kalman_filters(frame)

@@ -1,4 +1,3 @@
-
 import torch
 import cv2
 import pandas as pd
@@ -87,13 +86,18 @@ def display_video(frames, fps=30):
     cv2.destroyAllWindows()
 
 
-
 def convert_yolo_format_to_bbox(xmin, ymin, xmax, ymax, confidence):
-    return [int(xmin.item()), int(ymin.item()), (xmax - xmin).item(), (ymax - ymin).item(), confidence.item() * 100]
+    return [
+        int(xmin.item()),
+        int(ymin.item()),
+        (xmax - xmin).item(),
+        (ymax - ymin).item(),
+        confidence.item() * 100,
+    ]
 
 
 # Model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True, device='cpu')
+model = torch.hub.load("ultralytics/yolov5", "yolov5s", pretrained=True, device="cpu")
 
 DATAPATH = "data/MOT15/train"
 
@@ -125,7 +129,9 @@ for folder in os.listdir(DATAPATH):
 
         # Iterate over the persons
         for person in persons:
-            detections.append([frame + 1, -1, *convert_yolo_format_to_bbox(*person[:5]), -1, -1, -1])
+            detections.append(
+                [frame + 1, -1, *convert_yolo_format_to_bbox(*person[:5]), -1, -1, -1]
+            )
 
     # Create the dataframe
     df_det = pd.DataFrame(
@@ -144,12 +150,26 @@ for folder in os.listdir(DATAPATH):
         ],
     )
 
-    df_det = df_det.astype({"frame": int, "id": int, "bb_left": int, "bb_top": int, "bb_width": float, "bb_height": float, "conf": float, "x": int, "y": int, "z": int})
+    df_det = df_det.astype(
+        {
+            "frame": int,
+            "id": int,
+            "bb_left": int,
+            "bb_top": int,
+            "bb_width": float,
+            "bb_height": float,
+            "conf": float,
+            "x": int,
+            "y": int,
+            "z": int,
+        }
+    )
 
     # Create the folder if needed
     if not os.path.exists("data/yolo_dets/" + folder + "/det"):
         os.makedirs("data/yolo_dets/" + folder + "/det")
 
-
     # Save the dataframe
-    df_det.to_csv("data/yolo_dets/" + folder + "/det/det.txt", index=False, sep=',', header=False)
+    df_det.to_csv(
+        "data/yolo_dets/" + folder + "/det/det.txt", index=False, sep=",", header=False
+    )
