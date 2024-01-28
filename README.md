@@ -1,5 +1,7 @@
 ## Repo for my project of object tracking.
 
+Author: Arnaud Baradat - SCIA 2024
+
 ## Setup
 
 Make sure to have installed the virtual environment with the requirements.txt file and have activated it.
