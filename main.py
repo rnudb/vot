@@ -54,9 +54,6 @@ def main():
         if not os.path.isdir(os.path.join(DATA_FOLDER, folder)):
             continue
 
-        if folder != "ADL-Rundle-6":
-            continue
-
         # Measure the start time
         start_time = time.time()
 
